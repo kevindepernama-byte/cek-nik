@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencarian - {{ nama_db }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col">
+
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-3xl mx-auto flex items-center justify-between">
+            <a href="/dashboard" class="text-xs bg-slate-900 border border-slate-800 hover:border-blue-500 text-slate-300 px-3 py-1.5 rounded-xl font-medium transition">
+                ← Kembali ke Menu
+            </a>
+            <div class="text-xs font-mono bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-xl">
+                🛡️ Limit: <span class="font-bold text-white bg-blue-600 px-2 py-0.5 rounded-lg">{{ sisa_limit }} / 5</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 max-w-3xl flex-grow">
+
+        {% if error %}
+            <div class="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-2xl mb-6 text-sm text-center shadow-lg font-medium">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <div class="bg-[#111827] border border-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 mb-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400"></div>
+
+            <div class="mb-6 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-lg">Target Terpilih</span>
+                    <h2 class="text-xl font-bold text-white mt-2">{{ nama_db }}</h2>
+                </div>
+                <span class="text-xs text-slate-500 font-mono">HanzXy Engine</span>
+            </div>
+
+            <form method="POST" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">Pilih Metode Pencarian</label>
+                    <select name="metode" id="metodeSelect" onchange="updateInputMode()" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition">
+                        {% if target_id == '0' %}
+                            <option value="1" {% if selected_metode == '1' %}selected{% endif %}>Berdasarkan NIK</option>
+                            <option value="2" {% if selected_metode == '2' %}selected{% endif %}>Berdasarkan Nomor HP / Kontak</option>
+                            <option value="3" {% if selected_metode == '3' %}selected{% endif %}>Berdasarkan Nama Orang</option>
+                            <option value="4" {% if selected_metode == '4' %}selected{% endif %}>Berdasarkan Alamat</option>
+                            <option value="5" {% if selected_metode == '5' %}selected{% endif %}>Scan Seluruh Keyword (Universal)</option>
+                        {% elif target_id == '4' %}
+                            <option value="1" {% if selected_metode == '1' %}selected{% endif %}>Berdasarkan NIK</option>
+                            <option value="2" {% if selected_metode == '2' %}selected{% endif %}>Berdasarkan Nama Siswa</option>
+                            <option value="3" {% if selected_metode == '3' %}selected{% endif %}>Berdasarkan Kontak Orang Tua (No HP)</option>
+                        {% else %}
+                            <option value="1" {% if selected_metode == '1' %}selected{% endif %}>Berdasarkan NIK</option>
+                            <option value="2" {% if selected_metode == '2' %}selected{% endif %}>Berdasarkan Nama</option>
+                            <option value="3" {% if selected_metode == '3' %}selected{% endif %}>Berdasarkan Nomor HP / Telepon</option>
+                            <option value="4" {% if selected_metode == '4' %}selected{% endif %}>Berdasarkan Alamat</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div>
+                    <label id="labelKeyword" class="block text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">Masukkan NIK (Harus 16 Angka)</label>
+                    <input type="text" id="keywordInput" name="keyword" value="{{ keyword }}" placeholder="Ketik kata kunci..." required autocomplete="off"
+                           class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 transition">
+                </div>
+
+                <button type="submit" {% if sisa_limit <= 0 %}disabled{% endif %}
+                        class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition duration-200 text-sm">
+                    Cari Data Sekarang
+                </button>
+            </form>
+        </div>
+
+        {% if hasil is not none %}
+            <div class="mb-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-slate-200">Hasil Pemindaian Akurat</h3>
+                    <span class="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full font-mono">Ditemukan: {{ hasil|length }} data (Max 1)</span>
+                </div>
+
+                {% if hasil|length == 0 %}
+                    <div class="bg-[#111827] border border-red-500/20 text-red-400 p-6 rounded-2xl text-center text-sm shadow-xl">
+                        ⚠️ Data dengan kata kunci persis <span class="font-bold text-white">"{{ keyword }}"</span> tidak ditemukan atau tidak sesuai.
+                    </div>
+                {% else %}
+                    <div class="space-y-4">
+                        {% for item in hasil %}
+                            <div class="bg-[#111827] border border-slate-800 rounded-2xl p-5 shadow-xl">
+                                <div class="mb-3 pb-2 border-b border-slate-800">
+                                    <span class="bg-blue-500/10 text-blue-400 text-xs font-mono font-bold px-3 py-1 rounded-lg border border-blue-500/20">
+                                        {{ item.source }}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-sm">
+                                    {% for key, val in item.data.items() %}
+                                        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800/80 flex flex-col">
+                                            <span class="text-slate-400 text-xs font-mono uppercase tracking-wider mb-0.5">{{ key }}</span>
+                                            <span class="text-slate-100 font-medium break-all">{{ val }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+    </main>
+
+    <!-- Script Pengaturan Input Otomatis (Angka vs Hurup Kapital) -->
+    <script>
+        function updateInputMode() {
+            const select = document.getElementById('metodeSelect');
+            const input = document.getElementById('keywordInput');
+            const label = document.getElementById('labelKeyword');
+            const text = select.options[select.selectedIndex].text.toLowerCase();
+
+            if (text.includes('nik')) {
+                label.textContent = "Masukkan NIK (Wajib Angka & Harus Pas 16 Digit)";
+                input.placeholder = "Contoh: 321204...";
+                input.oninput = function() {
+                    this.value = this.value.replace(/\D/g, '').slice(0, 16);
+                };
+            } else if (text.includes('nomor') || text.includes('kontak') || text.includes('telp')) {
+                label.textContent = "Masukkan Nomor HP / Kontak (Wajib Angka)";
+                input.placeholder = "Contoh: 08123456789";
+                input.oninput = function() {
+                    this.value = this.value.replace(/\D/g, '');
+                };
+            } else {
+                label.textContent = "Masukkan " + select.options[select.selectedIndex].text + " (Otomatis Huruf Kapital)";
+                input.placeholder = "Ketik teks pencarian...";
+                input.oninput = function() {
+                    this.value = this.value.toUpperCase();
+                };
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', updateInputMode);
+    </script>
+</body>
+</html>
+
