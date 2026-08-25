@@ -25,7 +25,7 @@ siapkan_database_aman()
 
 # Rate Limiting IP (Max 5x)
 IP_LIMITS = {}
-MAX_LIMIT = 5
+MAX_LIMIT = 100
 
 def cek_dan_update_limit(ip_address):
     if ip_address not in IP_LIMITS:
