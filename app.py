@@ -3,27 +3,16 @@ import os
 import re
 import glob
 import sqlite3
-import zipfile
-import base64
+
 app = Flask(__name__)
 
+DB_DIR = "db"
 
-ZIP_FILE = base64.b64decode("ZGJfYW1hbi56aXA=").decode()
-PASSWORD = base64.b64decode("UGFzc3dvcmRSYWhhc2lhS2FtdTEyMw==").decode()
-DB_DIR = base64.b64decode("ZGI=").decode()
-def siapkan_database_aman():
-    if not os.path.exists(DB_DIR) or not os.path.exists(os.path.join(DB_DIR, "dukcapil.db")):
-        if os.path.exists(ZIP_FILE):
-            os.makedirs(DB_DIR, exist_ok=True)
-            try:
-                with zipfile.ZipFile(ZIP_FILE, 'r') as zf:
-                    zf.extractall(path=".", pwd=PASSWORD.encode('utf-8'))
-            except Exception as e:
-                print(f"[-] Gagal ekstrak database: {e}")
+# Pastikan folder db ada (opsional untuk jaga-jaga)
+if not os.path.exists(DB_DIR):
+    os.makedirs(DB_DIR, exist_ok=True)
 
-siapkan_database_aman()
-
-# Rate Limiting IP (Max 5x)
+# Rate Limiting IP (Max 100x)
 IP_LIMITS = {}
 MAX_LIMIT = 100
 
@@ -90,13 +79,10 @@ def cari_di_tabel(db_file, table_name, label_db, keyword, tipe_pencarian, target
         if not target_cols:
             target_cols = col_names
 
-        # ATURAN EKSEKUSI QUERY (100% sama atau mirip)
-        # Jika Target Khusus Sekolah (target_id == '4') atau NIK/Nomor HP, gunakan EXACT MATCH (=) agar tidak meleset
         if target_id == '4' or tipe_pencarian in ["NIK", "NOMOR HP"]:
             where_clause = " OR ".join([f"CAST(`{c}` AS TEXT) = ?" for c in target_cols])
             param = keyword
         else:
-            # Untuk selain sekolah (Nama/Alamat), gunakan EXACT MATCH juga (100% sama)
             where_clause = " OR ".join([f"UPPER(`{c}`) = UPPER(?)" for c in target_cols])
             param = keyword
 
@@ -157,24 +143,22 @@ def cari(target_id):
 
     if request.method == "POST":
         if sisa_limit <= 0:
-            error_msg = "⚠️ Batas limit pencarian Anda sudah habis (Maksimal 5x percobaan)."
+            error_msg = "⚠️ Batas limit pencarian Anda sudah habis."
         else:
             keyword = request.form.get("keyword", "").strip()
             selected_metode = request.form.get("metode", "1")
 
-            # VALIDASI KETAT INPUT
-            # VALIDASI KETAT INPUT
             if target_id == '4':
-                if selected_metode == '1': # Khusus NIK di menu Sekolah
+                if selected_metode == '1':
                     keyword = bersihkan_angka(keyword)
                     if len(keyword) != 16:
                         error_msg = "⚠️ NIK wajib berupa angka dan harus pas 16 digit!"
-                elif selected_metode == '3': # Khusus Kontak/No HP di menu Sekolah
+                elif selected_metode == '3':
                     keyword = bersihkan_angka(keyword)
-                else: # Untuk Nama, Alamat, Asal Sekolah (Huruf)
+                else:
                     keyword = keyword.upper()
             else:
-                if selected_metode in ['1', '3']: # Jika NIK atau Nomor HP umum
+                if selected_metode in ['1', '3']:
                     keyword = bersihkan_angka(keyword)
                     if selected_metode == '1' and len(keyword) != 16:
                         error_msg = "⚠️ NIK wajib berupa angka dan harus pas 16 digit!"
@@ -239,17 +223,14 @@ def cari(target_id):
                     for tbl in get_semua_tabel("db/bansos.db"):
                         temp_hasil.extend(cari_di_tabel("db/bansos.db", tbl, "BANSOS", keyword, tipe_pencarian, target_id))
 
-                # HILANGKAN DUPLIKAT & BATASI HANYA 1 DATA SAJA
                 unique_hasil = []
                 seen = set()
                 for item in temp_hasil:
-                    # Buat string identifier unik dari isinya
                     item_str = str(sorted(item['data'].items()))
                     if item_str not in seen:
                         seen.add(item_str)
                         unique_hasil.append(item)
 
-                # Batasi mutlak hanya 1 data saja yang ditampilkan
                 hasil = unique_hasil[:1]
 
     return render_template("cari.html", target_id=target_id, nama_db=nama_db, hasil=hasil, error=error_msg, 
@@ -257,4 +238,4 @@ def cari(target_id):
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
-
+            
