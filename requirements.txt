@@ -21,14 +21,12 @@ Jinja2==3.1.6
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
-nala @ file:///home/builder/.termux-build/nala/src
 openpyxl==3.1.5
 pexpect==4.9.0
 ptyprocess==0.7.0
 pycparser==3.0
 pycryptodome==3.23.0
 Pygments==2.21.0
-python-apt @ file:///home/builder/.termux-build/python-apt/src
 python-debian==1.1.1
 python-dotenv==1.2.3
 requests==2.34.2
